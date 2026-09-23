@@ -107,6 +107,11 @@ button {
   border: 1px solid var(--navy); background: var(--white); color: var(--navy);
 }
 button.primary { background: var(--navy); color: var(--white); }
+a.button {
+  display: inline-block; font: 14px var(--body); padding: 6px 12px; border-radius: 4px;
+  border: 1px solid var(--navy); color: var(--navy); text-decoration: none; white-space: nowrap;
+}
+a.button:hover { background: var(--navy); color: var(--white); }
 button:disabled { opacity: .5; cursor: default; }
 .next { font-size: 14px; }
 

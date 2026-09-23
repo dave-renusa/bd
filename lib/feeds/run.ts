@@ -12,9 +12,16 @@ export function authorized(req: Request): boolean {
   return !!secret && req.headers.get('authorization') === `Bearer ${secret}`;
 }
 
-/** Runs a job, records the outcome in bd.sources / bd.source_runs, returns JSON. */
-export async function runJob(req: Request, key: string, job: () => Promise<{ rows?: number; detail: Record<string, unknown> }>) {
+type Job = () => Promise<{ rows?: number; detail: Record<string, unknown> }>;
+
+/** Cron entry point: checks CRON_SECRET, then runs the job. */
+export async function runJob(req: Request, key: string, job: Job) {
   if (!authorized(req)) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  return executeJob(key, job);
+}
+
+/** Runs a job, records the outcome in bd.sources / bd.source_runs, returns JSON. */
+export async function executeJob(key: string, job: Job) {
   const started = new Date().toISOString();
   try {
     const { rows, detail } = await job();

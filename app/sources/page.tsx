@@ -8,7 +8,10 @@ interface Source {
   row_count: number | null; notes: string | null;
 }
 
-export default async function Sources() {
+const RUNNABLE: Record<string, string> = { pjm_queue: 'pjm', sabin: 'sabin', scoring: 'score' };
+
+export default async function Sources({ searchParams }: { searchParams: Promise<{ ran?: string }> }) {
+  const { ran } = await searchParams;
   const { data, error } = await db().from('sources').select('*').order('enabled', { ascending: false }).order('key');
   if (error) throw new Error(error.message);
   const rows = (data ?? []) as Source[];
@@ -19,10 +22,11 @@ export default async function Sources() {
     <>
       <h1>Sources</h1>
       <p className="meta">Feed health. Cron feeds run on Vercel; Claude feeds run as scheduled tasks and report here when they write.</p>
+      {ran && <div className="empty section">Ran {ran}. Check its status below.</div>}
       <div className="table-wrap section">
         <table className="grid">
           <thead>
-            <tr><th>Source</th><th>Engine</th><th>Cadence</th><th>Last run (ET)</th><th>Status</th><th className="num">Rows</th><th>Notes</th></tr>
+            <tr><th>Source</th><th>Engine</th><th>Cadence</th><th>Last run (ET)</th><th>Status</th><th className="num">Rows</th><th>Notes</th><th></th></tr>
           </thead>
           <tbody>
             {rows.map((s) => (
@@ -39,6 +43,11 @@ export default async function Sources() {
                 </td>
                 <td className="num">{s.row_count ?? ''}</td>
                 <td className="meta" style={{ maxWidth: 280 }}>{s.notes}</td>
+                <td>
+                  {RUNNABLE[s.key] && (
+                    <a className="button" href={`/api/run/${RUNNABLE[s.key]}?back=1`}>Run now</a>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
