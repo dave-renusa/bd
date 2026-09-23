@@ -29,6 +29,7 @@ export interface LeadRow {
   created_at: string;
   subject_technology: string | null;
   subject_state: string | null;
+  subject_fips: string | null;
   project_stage: string | null;
   place_name: string | null;
   county_name: string | null;
@@ -49,7 +50,7 @@ export interface LeadRow {
 
 export const LEAD_COLUMNS =
   'id, kind, display_name, score, score_breakdown, stage, closed_reason, owner, next_action, next_action_date, why_now, ' +
-  'snoozed_until, qualified_at, created_at, subject_technology, subject_state, project_stage, place_name, ' +
+  'snoozed_until, qualified_at, created_at, subject_technology, subject_state, subject_fips, project_stage, place_name, ' +
   'county_name, risk_tier, restriction_type, mw_ac, mw_storage, acres, iso, queue_id, developer_name, ' +
   'developer_parent, last_signal_at, signal_count, latest_headline, latest_url';
 

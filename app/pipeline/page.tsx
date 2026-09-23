@@ -1,6 +1,8 @@
 import { LEAD_STAGES, SEARCH_LIMIT, lastActivity, linkable, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
 import { STATE_CODES } from '@/lib/states';
 import LeadControls from '../lead-controls';
+import LeadMap, { type MapPoint } from './lead-map';
+import CENTROIDS from '@/lib/county-centroids.json';
 import StageGuide from '../stage-guide';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +16,18 @@ const KINDS = [
   { value: 'jurisdiction', label: 'Places (moratoria, rules)' },
 ];
 
-type Params = { q?: string; stage?: string; owner?: string; tech?: string; state?: string; kind?: string; min?: string };
+type Params = { q?: string; stage?: string; owner?: string; tech?: string; state?: string; kind?: string; min?: string; view?: string };
+
+const COORDS = CENTROIDS as unknown as Record<string, [number, number]>;
+
+/** Same query string with a different view. */
+function viewHref(sp: Params, view: 'list' | 'map') {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) if (v && k !== 'view') q.set(k, v);
+  if (view === 'map') q.set('view', 'map');
+  const s = q.toString();
+  return `/pipeline${s ? `?${s}` : ''}`;
+}
 
 export default async function Pipeline({ searchParams }: { searchParams: Promise<Params> }) {
   const sp = await searchParams;
@@ -26,10 +39,28 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
     owners(),
   ]);
 
+  const mapView = sp.view === 'map';
+  const points: MapPoint[] = [];
+  let unmapped = 0;
+  if (mapView) {
+    for (const l of rows) {
+      const c = l.subject_fips ? COORDS[l.subject_fips] : undefined;
+      if (!c) { unmapped++; continue; }
+      points.push({
+        id: l.id, lat: c[0], lon: c[1], name: l.display_name, score: l.score,
+        tech: techLabel(l.subject_technology) + (l.mw_ac ? `, ${Number(l.mw_ac).toLocaleString()} MW` : ''),
+        where: [l.place_name, l.county_name ?? l.subject_state].filter(Boolean).join(', '),
+        permitting: stageLabel(l.project_stage), lastActivity: lastActivity(l.score_breakdown),
+        stale: !!l.score_breakdown?.stale, url: linkable(l.latest_url),
+      });
+    }
+  }
+
   return (
     <>
       <h1>Pipeline and search</h1>
       <form className="filters section" method="get">
+        {mapView && <input type="hidden" name="view" value="map" />}
         <label>Keywords
           <input type="search" name="q" defaultValue={sp.q ?? ''} placeholder="Name, developer, county, setback..." />
         </label>
@@ -78,10 +109,26 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
       </p>
       <StageGuide />
 
-      <p className="meta section">
+      <div className="view-bar section">
+        <nav className="segmented" aria-label="View">
+          <a href={viewHref(sp, 'list')} className={mapView ? undefined : 'on'} aria-current={mapView ? undefined : 'page'}>List</a>
+          <a href={viewHref(sp, 'map')} className={mapView ? 'on' : undefined} aria-current={mapView ? 'page' : undefined}>Map</a>
+        </nav>
+      <p className="meta">
         {rows.length} lead{rows.length === 1 ? '' : 's'}{min > 0 ? `, score ${min}+` : ''}{sp.stage ? '' : ', closed leads hidden'}, highest score first
         {rows.length === SEARCH_LIMIT ? ` (first ${SEARCH_LIMIT}; narrow the search to see the rest)` : ''}.
+        {mapView && unmapped > 0 && ` ${unmapped} without a county (statewide or federal) are not on the map.`}
       </p>
+      </div>
+      {mapView ? (
+        <>
+          <LeadMap points={points} />
+          <p className="meta map-legend">
+            <span className="dot high" /> 70+ <span className="dot mid" /> 50 to 69 <span className="dot low" /> under 50.
+            Faded dots are stale. Leads sit at their county&apos;s center. Click a dot for details; click the map to zoom with the scroll wheel.
+          </p>
+        </>
+      ) : (
       <div className="table-wrap">
         <table className="grid">
           <thead>
@@ -106,6 +153,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
           </tbody>
         </table>
       </div>
+      )}
     </>
   );
 }
