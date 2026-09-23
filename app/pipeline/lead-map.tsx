@@ -5,7 +5,7 @@ import { useEffect, useRef } from 'react';
 
 export interface MapPoint {
   id: string; lat: number; lon: number; name: string; score: number; tech: string;
-  where: string; permitting: string; lastActivity: string | null; stale: boolean; url: string | null;
+  where: string; developer: string | null; permitting: string; lastActivity: string | null; stale: boolean; url: string | null;
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -51,6 +51,7 @@ export default function LeadMap({ points }: { points: MapPoint[] }) {
         m.bindPopup(
           `<div class="map-pop"><div class="map-pop-score">${p.score}</div><div>` +
           `<strong>${title}</strong><div class="map-pop-sub">${esc(p.where)}</div>` +
+          (p.developer ? `<div class="map-pop-sub">${esc(p.developer)}</div>` : '') +
           `<div class="map-pop-meta">${esc([p.tech, p.permitting].filter(Boolean).join(' · '))}</div>` +
           (p.lastActivity ? `<div class="map-pop-meta">${p.stale ? 'Stale: last' : 'Last'} activity ${esc(p.lastActivity)}</div>` : '') +
           `</div></div>`,
