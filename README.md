@@ -15,9 +15,12 @@ decisions: [docs/handoff_2026-09-23_bd-radar.md](docs/handoff_2026-09-23_bd-rada
   and `bd.source_runs` (see `/sources`).
 - **Scoring**: `bd.score_lead()` in Postgres, weights in `bd.score_weights`, thresholds in
   `bd.settings`. `bd.run_scoring()` creates missing project leads, rescores everything, and
-  moves Signal leads that reach 70 to Qualified (stamping `qualified_at`, which drives the
-  daily alert). Runs after each feed and nightly.
-- **Web app**: `/` Today, `/pipeline`, `/sources`. Stage, owner and snooze are one click.
+  stamps `qualified_at` the first time a lead reaches 70 (it drives the daily alert). Runs
+  after each feed and nightly.
+- **Stages**: our stage is New, Working, Closed (won or lost, in `closed_reason`) or Watch,
+  set by hand. Permitting stage (`bd.projects.stage`) is set by the feeds.
+- **Web app**: `/` Today, `/pipeline` (pipeline and search, via `bd.search_leads`), `/sources`.
+  Our stage, owner and snooze are one click.
 - **Claude tasks** (not in this repo yet): enrichment, opposition sweep, Greenlight parsing,
   outreach drafts. They read and write `bd.*` through the Supabase REST API with the service
   key, using the `Accept-Profile: bd` / `Content-Profile: bd` headers.
