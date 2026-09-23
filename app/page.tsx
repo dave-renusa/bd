@@ -5,7 +5,7 @@ import { crossedSinceYesterday, newThisWeek, owners, thresholds } from '@/lib/le
 
 export const dynamic = 'force-dynamic';
 
-export default async function Today({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
+export default async function Home({ searchParams }: { searchParams: Promise<{ all?: string }> }) {
   const { all } = await searchParams;
   const t = await thresholds();
   const showAll = all === '1';
@@ -22,8 +22,10 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
 
   return (
     <>
-      <h1>Today</h1>
-      <p className="meta">{dateLabel}</p>
+      <div className="page-head">
+        <h1>Home</h1>
+        <p className="meta">{dateLabel}</p>
+      </div>
       <StageGuide />
 
       <section className="section">

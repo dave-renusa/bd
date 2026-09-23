@@ -36,7 +36,7 @@ export default async function Sources({ searchParams }: { searchParams: Promise<
                 <td>{s.cadence}</td>
                 <td>{fmt(s.last_run)}</td>
                 <td>
-                  <span className={s.last_status === 'ok' ? 'status-ok' : s.last_status === 'error' ? 'status-error' : 'status-none'}>
+                  <span className={`status ${s.last_status === 'ok' ? 'status-ok' : s.last_status === 'error' ? 'status-error' : 'status-none'}`}>
                     {s.last_status ?? 'none'}
                   </span>
                   {s.last_error && <div className="meta" style={{ maxWidth: 320 }}>{s.last_error}</div>}
