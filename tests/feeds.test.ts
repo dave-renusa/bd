@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import { normalizePjm, parsePjmQueue, pjmTechnology } from '../lib/feeds/pjm';
-import { classifySabinSheet, findSabinLinks, normalizeContested, normalizeRestrictions, sabinRuleTypes, sabinStage } from '../lib/feeds/sabin';
+import { classifySabinSheet, findSabinLinks, firstUrl, normalizeContested, normalizeRestrictions, sabinRuleTypes, sabinStage } from '../lib/feeds/sabin';
 import { readCsv, toIsoDate } from '../lib/sheets';
 import { toStateCode } from '../lib/states';
 
@@ -129,5 +129,14 @@ describe('Sabin live file layout', () => {
     expect(out[0]).toMatchObject({ restriction_type: 'Setback Restriction', technologies: ['solar'], effective: '2023-01-01', is_moratorium: false });
     expect(out[1]).toMatchObject({ restriction_type: 'Ban / Moratorium; Size Cap', technologies: ['solar', 'wind'], locality: 'Cherrytree', is_moratorium: true });
     expect(sabinRuleTypes('no rules here')).toBeNull();
+  });
+});
+
+describe('Sabin citations', () => {
+  it('links the first web address in the citation text', () => {
+    expect(firstUrl('Gary Collins, Farm Bureau opposes line, FOX45, Sept. 11, 2024, https://foxbaltimore.com/news/a-b; Stop MPRP, https://stopmprp.com/ (last visited).'))
+      .toBe('https://foxbaltimore.com/news/a-b');
+    expect(firstUrl('Permit DP 4866, https://www.maine.gov/x/Permit.pdf); Kevin Miller, BANGOR DAILY NEWS')).toBe('https://www.maine.gov/x/Permit.pdf');
+    expect(firstUrl('Ordinance No. 01-2021 (2021)')).toBeNull();
   });
 });

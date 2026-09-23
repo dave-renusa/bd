@@ -1,5 +1,5 @@
 import LeadControls from './lead-controls';
-import { stageLabel, techLabel, type LeadRow } from '@/lib/leads';
+import { linkable, stageLabel, techLabel, type LeadRow } from '@/lib/leads';
 
 const FACTORS: { key: 'fit' | 'stage' | 'pain' | 'access' | 'competition'; label: string; max: number }[] = [
   { key: 'fit', label: 'Fit', max: 20 },
@@ -46,8 +46,8 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
           : <p className="why pending">Why now: awaiting enrichment.</p>}
         {lead.latest_headline && (
           <p className="headline">
-            Latest signal: {lead.latest_url
-              ? <a href={lead.latest_url} target="_blank" rel="noreferrer">{lead.latest_headline}</a>
+            Latest signal: {linkable(lead.latest_url)
+              ? <a href={linkable(lead.latest_url)!} target="_blank" rel="noreferrer">{lead.latest_headline}</a>
               : lead.latest_headline}
             {lead.last_signal_at && ` (${new Date(lead.last_signal_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`}
           </p>

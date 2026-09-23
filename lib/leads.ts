@@ -110,3 +110,6 @@ export const techLabel = (t: string | null) =>
      transmission: 'Transmission', other: 'Other' } as Record<string, string>)[t ?? ''] ?? 'Unknown';
 
 export const stageLabel = projectStageLabel;
+
+/** A signal URL safe to link to, or null. Feeds sometimes store citation text. */
+export const linkable = (u: string | null) => (u && /^https?:\/\/\S+$/i.test(u) ? u : null);
