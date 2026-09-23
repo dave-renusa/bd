@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import { normalizePjm, parsePjmQueue, pjmTechnology } from '../lib/feeds/pjm';
-import { findSabinLinks, normalizeContested, normalizeRestrictions, sabinStage } from '../lib/feeds/sabin';
+import { classifySabinSheet, findSabinLinks, normalizeContested, normalizeRestrictions, sabinStage } from '../lib/feeds/sabin';
 import { readCsv, toIsoDate } from '../lib/sheets';
 import { toStateCode } from '../lib/states';
 
@@ -27,7 +27,7 @@ describe('PJM queue', () => {
     const buf = await xlsx([
       ['PJM New Services Queue export'],
       ['Project ID', 'Name', 'Commercial Name', 'State', 'County', 'Status', 'Submitted Date', 'Fuel', 'MW Capacity', 'MW Energy', 'MFO'],
-      ['AG1-001', 'Doe 138kV', 'Sunny Acres', 'VA', 'Loudoun', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Solar', 80, 120, 120],
+      ['AG1-001 - moved to TC2', 'Doe 138kV', 'Sunny Acres', 'VA', 'Loudoun', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Solar', 80, 120, 120],
       ['AG1-002', 'Small 34.5kV', null, 'VA', 'Clarke', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Solar', 10, 20, 20],
       ['AG1-003', 'Gas Plant', null, 'PA', 'York', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Natural Gas', 900, 900, 900],
       ['AG1-004', 'Far Away', null, 'IL', 'Cook', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Wind', 200, 200, 200],
@@ -73,12 +73,20 @@ describe('Sabin', () => {
     expect(sabinStage('Approved with conditions')).toBe('approved');
   });
 
-  it('finds data links on the report page', () => {
-    const html = '<a href="/wp-content/uploads/2026/09/Restrictions-Sep-2026.xlsx">R</a> <a href="https://x.org/Contested_Projects.csv">C</a> <a href="/about">x</a>';
-    expect(findSabinLinks(html)).toEqual({
-      restrictions: 'https://oppositionreport.org/wp-content/uploads/2026/09/Restrictions-Sep-2026.xlsx',
-      contested: 'https://x.org/Contested_Projects.csv',
-    });
+  it('finds file and WordPress export links on the report page', () => {
+    const html = '<a href="/wp-content/uploads/2026/09/Restrictions-Sep-2026.xlsx">R</a> '
+      + '<a class="btn" href="https://oppositionreport.org/wp-load.php?security_token=ab12&amp;export_id=4&amp;action=get_data"><span>Download Contested Project Data</span></a> '
+      + '<a href="/about">About</a>';
+    expect(findSabinLinks(html)).toEqual([
+      { url: 'https://oppositionreport.org/wp-content/uploads/2026/09/Restrictions-Sep-2026.xlsx', text: 'R' },
+      { url: 'https://oppositionreport.org/wp-load.php?security_token=ab12&export_id=4&action=get_data', text: 'Download Contested Project Data' },
+    ]);
+  });
+
+  it('tells the two files apart by their headers', () => {
+    expect(classifySabinSheet([{ State: 'VA', County: 'X', 'Type of Restriction': 'Moratorium' }])).toBe('restrictions');
+    expect(classifySabinSheet([{ 'Project Name': 'A', State: 'OH', Capacity: 100 }])).toBe('contested');
+    expect(classifySabinSheet([{ Foo: 1 }])).toBeNull();
   });
 });
 

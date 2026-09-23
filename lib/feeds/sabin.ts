@@ -130,14 +130,33 @@ export function normalizeContested(rows: Row[]): SabinContested[] {
   return out;
 }
 
-/** Finds the two data-file links on the current-report page. */
-export function findSabinLinks(html: string, base = SABIN_PAGE): { restrictions?: string; contested?: string } {
-  const links = [...html.matchAll(/href\s*=\s*["']([^"']+\.(?:xlsx|xls|csv)(?:\?[^"']*)?)["']/gi)]
-    .map((m) => new URL(m[1], base).toString());
-  return {
-    restrictions: links.find((l) => /restrict/i.test(l)),
-    contested: links.find((l) => /contest/i.test(l)),
-  };
+/**
+ * Finds data-file links on the current-report page: direct .xlsx/.csv files
+ * and WordPress export links (wp-load.php?...&action=get_data), which have no
+ * file extension. Returns each link with its anchor text.
+ */
+export function findSabinLinks(html: string, base = SABIN_PAGE): { url: string; text: string }[] {
+  const out: { url: string; text: string }[] = [];
+  const seen = new Set<string>();
+  for (const m of html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const href = m[1].replace(/&amp;/g, '&');
+    const isFile = /\.(xlsx|xls|csv)(\?|$)/i.test(href);
+    const isExport = /action=get_data|export_id=/i.test(href);
+    if (!isFile && !isExport) continue;
+    const url = new URL(href, base).toString();
+    if (seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url, text: m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() });
+  }
+  return out;
+}
+
+/** Which Sabin file a parsed sheet is, judged by its column headers. */
+export function classifySabinSheet(rows: Row[]): 'restrictions' | 'contested' | null {
+  const headers = Object.keys(rows[0] ?? {}).map((h) => h.toLowerCase()).join(' | ');
+  if (/restriction/.test(headers)) return 'restrictions';
+  if (/project|capacity|developer/.test(headers)) return 'contested';
+  return null;
 }
 
 async function download(url: string): Promise<ArrayBuffer> {
@@ -147,22 +166,40 @@ async function download(url: string): Promise<ArrayBuffer> {
 }
 
 export async function fetchSabin(): Promise<{ restrictions: Row[]; contested: Row[]; urls: Record<string, string | undefined> }> {
-  let restrictionsUrl = process.env.SABIN_RESTRICTIONS_URL;
-  let contestedUrl = process.env.SABIN_CONTESTED_URL;
-  if (!restrictionsUrl || !contestedUrl) {
-    const res = await fetch(SABIN_PAGE);
-    if (!res.ok) throw new Error(`Sabin page fetch failed: HTTP ${res.status}`);
-    const found = findSabinLinks(await res.text());
-    restrictionsUrl ||= found.restrictions;
-    contestedUrl ||= found.contested;
+  const hints = ['State', 'County'];
+  const load = (url: string) => download(url).then((b) => readSheet(b, hints));
+  const envR = process.env.SABIN_RESTRICTIONS_URL;
+  const envC = process.env.SABIN_CONTESTED_URL;
+  if (envR || envC) {
+    const [restrictions, contested] = await Promise.all([
+      envR ? load(envR) : Promise.resolve([]),
+      envC ? load(envC) : Promise.resolve([]),
+    ]);
+    return { restrictions, contested, urls: { restrictionsUrl: envR, contestedUrl: envC } };
   }
-  if (!restrictionsUrl && !contestedUrl) {
+
+  const res = await fetch(SABIN_PAGE);
+  if (!res.ok) throw new Error(`Sabin page fetch failed: HTTP ${res.status}`);
+  const links = findSabinLinks(await res.text());
+  if (links.length === 0) {
     throw new Error('No Sabin data links found on the report page. Set SABIN_RESTRICTIONS_URL and SABIN_CONTESTED_URL.');
   }
-  const hints = ['State', 'County'];
-  const [restrictions, contested] = await Promise.all([
-    restrictionsUrl ? download(restrictionsUrl).then((b) => readSheet(b, hints)) : Promise.resolve([]),
-    contestedUrl ? download(contestedUrl).then((b) => readSheet(b, hints)) : Promise.resolve([]),
-  ]);
-  return { restrictions, contested, urls: { restrictionsUrl, contestedUrl } };
+
+  // Anchor text or URL usually says which file it is; the column headers settle it otherwise.
+  let restrictions: Row[] = [];
+  let contested: Row[] = [];
+  const urls: Record<string, string | undefined> = {};
+  for (const link of links.slice(0, 6)) {
+    let rows: Row[];
+    try { rows = await load(link.url); } catch { continue; }
+    const byLabel = /restrict/i.test(link.text + link.url) ? 'restrictions'
+      : /contest|project/i.test(link.text + link.url) ? 'contested' : null;
+    const kind = classifySabinSheet(rows) ?? byLabel;
+    if (kind === 'restrictions' && restrictions.length === 0) { restrictions = rows; urls.restrictionsUrl = link.url; }
+    if (kind === 'contested' && contested.length === 0) { contested = rows; urls.contestedUrl = link.url; }
+  }
+  if (restrictions.length === 0 && contested.length === 0) {
+    throw new Error(`Found ${links.length} data link(s) on the Sabin page but none parsed as Restriction or Contested Project data: ${links.map((l) => l.text || l.url).join('; ').slice(0, 400)}`);
+  }
+  return { restrictions, contested, urls };
 }
