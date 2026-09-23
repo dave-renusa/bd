@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs';
 import { describe, expect, it } from 'vitest';
 import { normalizePjm, parsePjmQueue, pjmTechnology } from '../lib/feeds/pjm';
-import { classifySabinSheet, findSabinLinks, normalizeContested, normalizeRestrictions, sabinStage } from '../lib/feeds/sabin';
+import { classifySabinSheet, findSabinLinks, normalizeContested, normalizeRestrictions, sabinRuleTypes, sabinStage } from '../lib/feeds/sabin';
 import { readCsv, toIsoDate } from '../lib/sheets';
 import { toStateCode } from '../lib/states';
 
@@ -86,6 +86,8 @@ describe('Sabin', () => {
   it('tells the two files apart by their headers', () => {
     expect(classifySabinSheet([{ State: 'VA', County: 'X', 'Type of Restriction': 'Moratorium' }])).toBe('restrictions');
     expect(classifySabinSheet([{ 'Project Name': 'A', State: 'OH', Capacity: 100 }])).toBe('contested');
+    expect(classifySabinSheet([{ ID: 1, Type: 'Solar', State: 'VA', Content: 'x', 'Year Adopted': 2023 }])).toBe('restrictions');
+    expect(classifySabinSheet([{ 'Post iD': 1, Title: 'A', Capacity: '', Litigation: 'No', 'Year Cancelled': '' }])).toBe('contested');
     expect(classifySabinSheet([{ Foo: 1 }])).toBeNull();
   });
 });
@@ -97,5 +99,35 @@ describe('helpers', () => {
     expect(toStateCode('Puerto Rico')).toBeNull();
     expect(toIsoDate(46082)).toBe('2026-03-01');
     expect(toIsoDate('not a date')).toBeNull();
+  });
+});
+
+describe('Sabin live file layout', () => {
+  it('reads Title, Type, Content and Post iD from the contested file', () => {
+    const rows = readCsv([
+      'Post iD,Title,State,County,Municipality,Type,Capacity,Status,Content,Date of Last Event',
+      '4045,Bull Hill Wind Project (Hancock County),ME,Hancock County,,Wind,34,Pending,Opponents intervened.,2011',
+      '4035,Maryland Piedmont Reliability Project (Baltimore; Carroll and Frederick Counties),MD,Baltimore County|Carroll County,,Transmission,,Canceled,Line opposed.,2024',
+      '4050,Sunny Fields,OH,Knox County,,Solar|Storage,120,Operational,Built.,2023',
+    ].join('\n'));
+    const out = normalizeContested(rows);
+    expect(out[0]).toMatchObject({ project_name: 'Bull Hill Wind Project', technology: 'wind', mw: 34, stage: 'contested', stage_at: '2011-01-01', summary: 'Opponents intervened.' });
+    expect(out[1]).toMatchObject({ project_name: 'Maryland Piedmont Reliability Project', county: 'Baltimore County', technology: 'transmission', stage: 'withdrawn' });
+    expect(out[2]).toMatchObject({ technology: 'solar_bess', stage: 'approved' });
+    expect(new Set(out.map((r) => r.key)).size).toBe(3);
+  });
+
+  it('takes restriction type from rule labels, drops expired rules, and ignores a lifted moratorium', () => {
+    const rows = readCsv([
+      'ID,Title,State,County,Municipality,Type,Status,Content,Year Adopted',
+      '5457,Halifax County,VA,Halifax County,,Solar,In effect,"Rule 10a: Setback Restriction (solar) On May 1, 2023 the Board adopted a setback. The Board imposed a moratorium in 2024 and lifted it.",2023',
+      '5537,Cherrytree Township (Venango County),PA,Venango County,Cherrytree,Wind|Solar,In effect,Rule 1: Ban / Moratorium (solar) | Rule 2: Size Cap (solar),2021',
+      '5600,Old Town,PA,Venango County,,Wind,Expired,Rule 1: Ban / Moratorium (wind),2019',
+    ].join('\n'));
+    const out = normalizeRestrictions(rows);
+    expect(out).toHaveLength(2);
+    expect(out[0]).toMatchObject({ restriction_type: 'Setback Restriction', technologies: ['solar'], effective: '2023-01-01', is_moratorium: false });
+    expect(out[1]).toMatchObject({ restriction_type: 'Ban / Moratorium; Size Cap', technologies: ['solar', 'wind'], locality: 'Cherrytree', is_moratorium: true });
+    expect(sabinRuleTypes('no rules here')).toBeNull();
   });
 });
