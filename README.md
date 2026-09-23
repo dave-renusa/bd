@@ -19,7 +19,7 @@ decisions: [docs/handoff_2026-09-23_bd-radar.md](docs/handoff_2026-09-23_bd-rada
   after each feed and nightly.
 - **Stages**: our stage is New, Working, Closed (won or lost, in `closed_reason`) or Watch,
   set by hand. Permitting stage (`bd.projects.stage`) is set by the feeds.
-- **Web app**: `/` Today, `/pipeline` (pipeline and search, via `bd.search_leads`), `/sources`.
+- **Web app**: `/` Home, `/pipeline` (pipeline and search, via `bd.search_leads`), `/sources`.
   Our stage, owner and snooze are one click.
 - **Claude tasks** (not in this repo yet): enrichment, opposition sweep, Greenlight parsing,
   outreach drafts. They read and write `bd.*` through the Supabase REST API with the service

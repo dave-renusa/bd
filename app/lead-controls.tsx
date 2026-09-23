@@ -42,7 +42,7 @@ export default function LeadControls({ id, stage, closedReason, owner, owners }:
       <button type="button" disabled={pending} onClick={() => start(() => snooze(id, 14))}>
         Snooze 2 weeks
       </button>
-      {pending && <span className="meta">Saving...</span>}
+      {pending && <span className="saving">Saving...</span>}
     </div>
   );
 }

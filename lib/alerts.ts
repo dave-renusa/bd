@@ -60,7 +60,7 @@ export function dailyAlertHtml(leads: AlertLead[], siteUrl: string): string {
       <div style="font:13px Arial,sans-serif;color:#D5DAE3">${leads.length} lead${leads.length === 1 ? '' : 's'} crossed 70 in the last 24 hours</div>
     </td></tr>
     <tr><td style="padding:4px 24px 20px"><table width="100%" cellpadding="0" cellspacing="0">${rows}</table>
-      <p style="font:13px Arial,sans-serif;color:#5A6273;margin-top:16px"><a href="${esc(siteUrl)}" style="color:#0A2240">Open the Today view</a></p>
+      <p style="font:13px Arial,sans-serif;color:#5A6273;margin-top:16px"><a href="${esc(siteUrl)}" style="color:#0A2240">Open BD Radar</a></p>
     </td></tr>
   </table></div>`;
 }

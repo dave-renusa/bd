@@ -67,8 +67,10 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
         <label>Min score
           <input type="number" name="min" defaultValue={min} min={0} max={100} style={{ minWidth: 70, width: 70 }} />
         </label>
-        <button className="primary" type="submit">Search</button>
-        {searching && <a className="button" href="/pipeline">Clear</a>}
+        <div className="actions">
+          <button className="primary" type="submit">Search</button>
+          {searching && <a className="button" href="/pipeline">Clear</a>}
+        </div>
       </form>
       <p className="meta">
         Keywords match the lead name, developer, place and the text of every signal, so &ldquo;setback&rdquo; finds
@@ -88,7 +90,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
           <tbody>
             {rows.map((l) => (
               <tr key={l.id}>
-                <td className="num"><strong>{l.score}</strong></td>
+                <td className="num"><span className={`score-pill${l.score >= 70 ? ' high' : l.score >= 50 ? ' mid' : ''}`}>{l.score}</span></td>
                 <td>{l.latest_url
                   ? <a href={l.latest_url} target="_blank" rel="noreferrer">{l.display_name}</a>
                   : l.display_name}

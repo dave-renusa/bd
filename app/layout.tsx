@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <p className="brand-title">RenUSA BD Radar</p>
               <div className="brand-sub">Queue entries, opposition and restarts, scored and owned</div>
             </div>
-            <div>
+            <div className="header-right">
               <form className="header-search" action="/pipeline" method="get" role="search">
                 <input type="search" name="q" placeholder="Search leads" aria-label="Search leads" />
               </form>
