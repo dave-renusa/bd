@@ -1,0 +1,103 @@
+import { db, settingNumber } from './db';
+
+import type { LeadStage } from './stages';
+export { LEAD_STAGES, type LeadStage } from './stages';
+
+export interface Reason { factor: string; key: string; points: number; label: string; detail?: string | null }
+export interface Breakdown {
+  total?: number; fit?: number; stage?: number; pain?: number; access?: number; competition?: number;
+  reasons?: Reason[];
+}
+
+export interface LeadRow {
+  id: string;
+  kind: string;
+  display_name: string;
+  score: number;
+  score_breakdown: Breakdown;
+  stage: LeadStage;
+  owner: string | null;
+  next_action: string | null;
+  next_action_date: string | null;
+  why_now: string | null;
+  snoozed_until: string | null;
+  qualified_at: string | null;
+  created_at: string;
+  subject_technology: string | null;
+  subject_state: string | null;
+  project_stage: string | null;
+  place_name: string | null;
+  county_name: string | null;
+  risk_tier: number | null;
+  restriction_type: string | null;
+  mw_ac: number | null;
+  mw_storage: number | null;
+  acres: number | null;
+  iso: string | null;
+  queue_id: string | null;
+  developer_name: string | null;
+  developer_parent: string | null;
+  last_signal_at: string | null;
+  signal_count: number | null;
+  latest_headline: string | null;
+  latest_url: string | null;
+}
+
+export const LEAD_COLUMNS =
+  'id, kind, display_name, score, score_breakdown, stage, owner, next_action, next_action_date, why_now, ' +
+  'snoozed_until, qualified_at, created_at, subject_technology, subject_state, project_stage, place_name, ' +
+  'county_name, risk_tier, restriction_type, mw_ac, mw_storage, acres, iso, queue_id, developer_name, ' +
+  'developer_parent, last_signal_at, signal_count, latest_headline, latest_url';
+
+export async function owners(): Promise<string[]> {
+  const { data } = await db().from('settings').select('value').eq('key', 'owners').maybeSingle();
+  return Array.isArray(data?.value) ? (data!.value as string[]) : ['Dave', 'Kate', 'Ben'];
+}
+
+export const thresholds = async () => ({
+  qualify: await settingNumber('qualify_threshold', 70),
+  signal: await settingNumber('signal_threshold', 50),
+});
+
+const today = () => new Date().toISOString().slice(0, 10);
+const notSnoozed = () => `snoozed_until.is.null,snoozed_until.lte.${today()}`;
+
+/** Leads that crossed the qualify threshold in the last 24 hours. */
+export async function crossedSinceYesterday(): Promise<LeadRow[]> {
+  const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const { data, error } = await db().from('lead_view').select(LEAD_COLUMNS)
+    .gte('qualified_at', since).or(notSnoozed()).order('score', { ascending: false }).limit(50);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as LeadRow[];
+}
+
+/** Open leads with a signal observed in the last 7 days. */
+export async function newThisWeek(minScore: number): Promise<LeadRow[]> {
+  const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+  const { data, error } = await db().from('lead_view').select(LEAD_COLUMNS)
+    .gte('last_signal_at', since).gte('score', minScore).not('stage', 'in', '(Won,Lost)')
+    .or(notSnoozed()).order('score', { ascending: false }).order('last_signal_at', { ascending: false }).limit(100);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as LeadRow[];
+}
+
+export interface PipelineFilters { stage?: string; owner?: string; tech?: string; state?: string; min?: number }
+
+export async function pipeline(f: PipelineFilters): Promise<LeadRow[]> {
+  let q = db().from('lead_view').select(LEAD_COLUMNS);
+  if (f.stage) q = q.eq('stage', f.stage);
+  if (f.owner === '_none') q = q.is('owner', null);
+  else if (f.owner) q = q.eq('owner', f.owner);
+  if (f.tech) q = q.eq('subject_technology', f.tech);
+  if (f.state) q = q.eq('subject_state', f.state);
+  if (f.min != null) q = q.gte('score', f.min);
+  const { data, error } = await q.order('score', { ascending: false }).limit(500);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as LeadRow[];
+}
+
+export const techLabel = (t: string | null) =>
+  ({ solar: 'Solar', wind: 'Wind', bess: 'BESS', solar_bess: 'Solar + BESS', data_center: 'Data center',
+     transmission: 'Transmission', other: 'Other' } as Record<string, string>)[t ?? ''] ?? 'Unknown';
+
+export const stageLabel = (s: string | null) => (s ?? '').replace(/_/g, ' ');
