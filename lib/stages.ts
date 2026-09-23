@@ -6,11 +6,11 @@ export type LeadStage = (typeof LEAD_STAGES)[number];
 export const LEAD_STAGE_HELP: Record<LeadStage, string> = {
   New: 'Created automatically from a feed; nobody has picked it up yet.',
   Working: 'Someone is on it: reviewing, reaching out, talking or proposing.',
-  Closed: 'Done. Marked won (engaged) or lost.',
+  Closed: 'Done: won (engaged), lost, or dead project (stalled, canceled or not worth pursuing). Hidden from Home and, by default, from Pipeline.',
   Watch: 'Not now, keep an eye on it. Set automatically for projects already built.',
 };
 
-export const CLOSED_REASONS = ['won', 'lost'] as const;
+export const CLOSED_REASONS = ['won', 'lost', 'dead'] as const;
 export type ClosedReason = (typeof CLOSED_REASONS)[number];
 
 /** Where a project is in permitting. Set by the feeds, not by us. */

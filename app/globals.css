@@ -259,3 +259,4 @@ details.guide summary { color: var(--navy); font-weight: 600; }
   :root { --muted: #3D4454; --line: #B9B2A2; }
   .card, .empty, .filters, .table-wrap, details.guide { box-shadow: 0 0 0 1px #8C8574; }
 }
+.chip.stale { background: #F3EFE6; color: var(--muted); font-style: italic; }
