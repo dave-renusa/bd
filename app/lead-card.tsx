@@ -81,7 +81,7 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
           <p className="next"><strong>Next:</strong> {lead.next_action}
             {lead.next_action_date && ` (by ${lead.next_action_date})`}</p>
         )}
-        <LeadControls id={lead.id} stage={lead.stage} owner={lead.owner} owners={owners} />
+        <LeadControls id={lead.id} stage={lead.stage} closedReason={lead.closed_reason} owner={lead.owner} owners={owners} />
       </div>
     </article>
   );

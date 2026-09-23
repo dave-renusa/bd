@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
-import { LEAD_STAGES, type LeadStage } from '@/lib/stages';
+import { CLOSED_REASONS, LEAD_STAGES, type ClosedReason, type LeadStage } from '@/lib/stages';
 
 async function update(id: string, patch: Record<string, unknown>) {
   const { error } = await db().from('leads').update(patch).eq('id', id);
@@ -11,9 +11,15 @@ async function update(id: string, patch: Record<string, unknown>) {
   revalidatePath('/pipeline');
 }
 
-export async function setStage(id: string, stage: LeadStage) {
+/** Closed needs a reason: won or lost. */
+export async function setStage(id: string, stage: LeadStage, reason?: ClosedReason) {
   if (!LEAD_STAGES.includes(stage)) throw new Error('invalid stage');
-  await update(id, { stage, stage_changed_at: new Date().toISOString() });
+  if (stage === 'Closed' && !CLOSED_REASONS.includes(reason as ClosedReason)) throw new Error('closed needs won or lost');
+  await update(id, {
+    stage,
+    closed_reason: stage === 'Closed' ? reason : null,
+    stage_changed_at: new Date().toISOString(),
+  });
 }
 
 export async function setOwner(id: string, owner: string) {
