@@ -10,6 +10,7 @@ const OPTIONS: { value: string; label: string; stage: LeadStage; reason?: Closed
   { value: 'Working', label: 'Working', stage: 'Working' },
   { value: 'Closed:won', label: 'Closed: won', stage: 'Closed', reason: 'won' },
   { value: 'Closed:lost', label: 'Closed: lost', stage: 'Closed', reason: 'lost' },
+  { value: 'Closed:dead', label: 'Closed: dead project', stage: 'Closed', reason: 'dead' },
   { value: 'Watch', label: 'Watch', stage: 'Watch' },
 ];
 

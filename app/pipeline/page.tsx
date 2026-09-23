@@ -1,4 +1,4 @@
-import { LEAD_STAGES, SEARCH_LIMIT, linkable, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
+import { LEAD_STAGES, SEARCH_LIMIT, lastActivity, linkable, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
 import { STATE_CODES } from '@/lib/states';
 import LeadControls from '../lead-controls';
 import StageGuide from '../stage-guide';
@@ -79,13 +79,13 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
       <StageGuide />
 
       <p className="meta section">
-        {rows.length} lead{rows.length === 1 ? '' : 's'}{min > 0 ? `, score ${min}+` : ''}, highest score first
+        {rows.length} lead{rows.length === 1 ? '' : 's'}{min > 0 ? `, score ${min}+` : ''}{sp.stage ? '' : ', closed leads hidden'}, highest score first
         {rows.length === SEARCH_LIMIT ? ` (first ${SEARCH_LIMIT}; narrow the search to see the rest)` : ''}.
       </p>
       <div className="table-wrap">
         <table className="grid">
           <thead>
-            <tr><th className="num">Score</th><th>Lead</th><th>Tech</th><th>Where</th><th>Permitting</th><th>Latest signal</th><th>Our stage and owner</th></tr>
+            <tr><th className="num">Score</th><th>Lead</th><th>Tech</th><th>Where</th><th>Permitting</th><th>Last activity</th><th>Our stage and owner</th></tr>
           </thead>
           <tbody>
             {rows.map((l) => (
@@ -99,7 +99,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
                 <td>{techLabel(l.subject_technology)}{l.mw_ac ? <div className="meta">{Number(l.mw_ac).toLocaleString()} MW</div> : null}</td>
                 <td>{[l.place_name, l.county_name ?? l.subject_state].filter(Boolean).join(', ')}</td>
                 <td>{stageLabel(l.project_stage)}</td>
-                <td className="meta">{l.last_signal_at ? new Date(l.last_signal_at).toLocaleDateString('en-US') : ''}</td>
+                <td className="meta">{lastActivity(l.score_breakdown)}{l.score_breakdown?.stale && <div><span className="status status-none">Stale</span></div>}</td>
                 <td style={{ minWidth: 300 }}><LeadControls id={l.id} stage={l.stage} closedReason={l.closed_reason} owner={l.owner} owners={ownerList} /></td>
               </tr>
             ))}
