@@ -98,7 +98,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
                 <td>{[l.place_name, l.county_name ?? l.subject_state].filter(Boolean).join(', ')}</td>
                 <td>{stageLabel(l.project_stage)}</td>
                 <td className="meta">{l.last_signal_at ? new Date(l.last_signal_at).toLocaleDateString('en-US') : ''}</td>
-                <td style={{ minWidth: 300 }}><LeadControls id={l.id} stage={l.stage} owner={l.owner} owners={ownerList} /></td>
+                <td style={{ minWidth: 300 }}><LeadControls id={l.id} stage={l.stage} closedReason={l.closed_reason} owner={l.owner} owners={ownerList} /></td>
               </tr>
             ))}
           </tbody>

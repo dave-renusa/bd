@@ -17,6 +17,7 @@ export interface LeadRow {
   score: number;
   score_breakdown: Breakdown;
   stage: LeadStage;
+  closed_reason: string | null;
   owner: string | null;
   next_action: string | null;
   next_action_date: string | null;
@@ -45,7 +46,7 @@ export interface LeadRow {
 }
 
 export const LEAD_COLUMNS =
-  'id, kind, display_name, score, score_breakdown, stage, owner, next_action, next_action_date, why_now, ' +
+  'id, kind, display_name, score, score_breakdown, stage, closed_reason, owner, next_action, next_action_date, why_now, ' +
   'snoozed_until, qualified_at, created_at, subject_technology, subject_state, project_stage, place_name, ' +
   'county_name, risk_tier, restriction_type, mw_ac, mw_storage, acres, iso, queue_id, developer_name, ' +
   'developer_parent, last_signal_at, signal_count, latest_headline, latest_url';
@@ -76,7 +77,7 @@ export async function crossedSinceYesterday(): Promise<LeadRow[]> {
 export async function newThisWeek(minScore: number): Promise<LeadRow[]> {
   const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
   const { data, error } = await db().from('lead_view').select(LEAD_COLUMNS)
-    .gte('last_signal_at', since).gte('score', minScore).not('stage', 'in', '(Won,Lost)')
+    .gte('last_signal_at', since).gte('score', minScore).neq('stage', 'Closed')
     .or(notSnoozed()).order('score', { ascending: false }).order('last_signal_at', { ascending: false }).limit(100);
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as LeadRow[];

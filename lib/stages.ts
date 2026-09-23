@@ -1,18 +1,17 @@
 // Shared with client components, so no server imports here.
-export const LEAD_STAGES = ['Signal', 'Qualified', 'Contacted', 'Conversation', 'Proposal', 'Won', 'Lost', 'Watch'] as const;
+export const LEAD_STAGES = ['New', 'Working', 'Closed', 'Watch'] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 
 /** What each of our sales stages means. Shown in the stage guide. */
 export const LEAD_STAGE_HELP: Record<LeadStage, string> = {
-  Signal: 'New. Created automatically from a feed; nobody has reviewed it yet.',
-  Qualified: 'Reviewed and worth pursuing.',
-  Contacted: 'We reached out.',
-  Conversation: 'They replied and we are talking.',
-  Proposal: 'We sent a proposal or scope.',
-  Won: 'Engaged.',
-  Lost: 'Closed without an engagement.',
+  New: 'Created automatically from a feed; nobody has picked it up yet.',
+  Working: 'Someone is on it: reviewing, reaching out, talking or proposing.',
+  Closed: 'Done. Marked won (engaged) or lost.',
   Watch: 'Not now, keep an eye on it. Set automatically for projects already built.',
 };
+
+export const CLOSED_REASONS = ['won', 'lost'] as const;
+export type ClosedReason = (typeof CLOSED_REASONS)[number];
 
 /** Where a project is in permitting. Set by the feeds, not by us. */
 export const PROJECT_STAGES: { key: string; label: string; help: string }[] = [
