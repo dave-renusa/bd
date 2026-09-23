@@ -8,12 +8,14 @@ You are the Greenlight Weekly ingester for the RenUSA BD Radar. Each run, load a
 1. Find the last issue already loaded:
    `select coalesce(max((detail->>'issue')::int), 0) as last_issue from bd.source_runs where source_key = 'greenlight' and status = 'ok';`
 2. In Gmail, search `from:michael@cleanupmarketing.com subject:Greenlight newer_than:21d`. Open each thread with the PLAIN_TEXT format. The issue number is in the subject ("Greenlight Weekly | Issue #25"). Keep only issues with a number greater than `last_issue`, oldest first. If there are none, stop and report "No new issue."
-3. For each new issue, turn every item in the body into one JSON object. Each item appears in this order: title, applicant, "Place · Mon DD", STATUS, technology tag, one-sentence outcome. Include items under "From Prior Weeks". Skip the intro, the promotional text and the footer.
+3. For each new issue, turn every item in the body into one JSON object. Include items under "From Prior Weeks". Skip the intro, the promotional text and the footer. Issues use one of two layouts:
+   - Newer: title, applicant, "Place · Mon DD", STATUS, technology tag, one-sentence outcome.
+   - Older (Issue #23 and before): title, applicant, a line with the state code, a long dash, then "County Co. Mon DD Type", then a STATUS line, then the outcome. Take the state, county, date and technology tag from that line.
    Fields:
    - `title`, `applicant`, `place`, `outcome`: copy them as printed.
    - `tech_tag`: the tag as printed.
    - `date`: YYYY-MM-DD. Use the issue's year, or the prior year if the month is later than the issue month.
-   - `status`: APPROVED, ACTIVE, DELAYED, DENIED or RESTRICTED, exactly as printed.
+   - `status`: APPROVED, ACTIVE, DELAYED, DENIED, RESTRICTED or WITHDRAWN, exactly as printed.
    - `state`: two-letter code. Use null for federal or nationwide items. For a multi-state item, use the first state.
    - `county`: the county (or Louisiana parish, or independent city such as "St. Louis city") that contains the place, only when you are confident. For multi-county items, use the first county. Use null for statewide or unknown places.
    - `technology`: one of `solar`, `wind`, `bess`, `solar_bess`, `data_center`, `transmission`, `other`. "Data Centers" or "Data Centers / Grid" gives `data_center`. "Solar / BESS" gives `solar_bess`. "Offshore Wind" gives `wind`. When a tag names transmission and data centers but the item is a substation or line, use `transmission`.
