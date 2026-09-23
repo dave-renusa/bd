@@ -50,6 +50,9 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
         id: l.id, lat: c[0], lon: c[1], name: l.display_name, score: l.score,
         tech: techLabel(l.subject_technology) + (l.mw_ac ? `, ${Number(l.mw_ac).toLocaleString()} MW` : ''),
         where: [l.place_name, l.county_name ?? l.subject_state].filter(Boolean).join(', '),
+        developer: l.kind === 'project'
+          ? (l.developer_name ? `Developer: ${l.developer_name}${l.developer_parent ? ` (${l.developer_parent})` : ''}` : 'Developer not identified yet')
+          : null,
         permitting: stageLabel(l.project_stage), lastActivity: lastActivity(l.score_breakdown),
         stale: !!l.score_breakdown?.stale, url: linkable(l.latest_url),
       });
@@ -132,7 +135,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
       <div className="table-wrap">
         <table className="grid">
           <thead>
-            <tr><th className="num">Score</th><th>Lead</th><th>Tech</th><th>Where</th><th>Permitting</th><th>Last activity</th><th>Our stage and owner</th></tr>
+            <tr><th className="num">Score</th><th>Lead</th><th>Tech</th><th>Permitting</th><th>Last activity</th><th>Our stage and owner</th></tr>
           </thead>
           <tbody>
             {rows.map((l) => (
@@ -141,13 +144,14 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
                 <td>{linkable(l.latest_url)
                   ? <a href={linkable(l.latest_url)!} target="_blank" rel="noreferrer">{l.display_name}</a>
                   : l.display_name}
-                  {l.developer_name && <div className="meta">{l.developer_name}</div>}
-                  {l.latest_headline && <div className="meta">{l.latest_headline}</div>}</td>
+                  <div className="meta">{[l.place_name, l.county_name ?? l.subject_state].filter(Boolean).join(', ')}</div>
+                  {l.kind === 'project' && (l.developer_name
+                    ? <div className="meta">Developer: {l.developer_name}{l.developer_parent ? ` (${l.developer_parent})` : ''}</div>
+                    : <div className="meta unknown">Developer not identified yet</div>)}</td>
                 <td>{techLabel(l.subject_technology)}{l.mw_ac ? <div className="meta">{Number(l.mw_ac).toLocaleString()} MW</div> : null}</td>
-                <td>{[l.place_name, l.county_name ?? l.subject_state].filter(Boolean).join(', ')}</td>
                 <td>{stageLabel(l.project_stage)}</td>
                 <td className="meta">{lastActivity(l.score_breakdown)}{l.score_breakdown?.stale && <div><span className="status status-none">Stale</span></div>}</td>
-                <td style={{ minWidth: 300 }}><LeadControls id={l.id} stage={l.stage} closedReason={l.closed_reason} owner={l.owner} owners={ownerList} /></td>
+                <td><LeadControls compact id={l.id} stage={l.stage} closedReason={l.closed_reason} owner={l.owner} owners={ownerList} /></td>
               </tr>
             ))}
           </tbody>

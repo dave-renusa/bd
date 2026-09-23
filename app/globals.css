@@ -289,3 +289,12 @@ details.guide summary { color: var(--navy); font-weight: 600; }
 .dot.high { background: #0A2240; } .dot.mid { background: #2C4A73; } .dot.low { background: #9AA3B2; }
 .card-sub { margin: 2px 0 0; color: var(--muted); font-size: 0.875rem; }
 @media (max-width: 760px) { .lead-map { height: 70vh; } }
+.card-sub + .card-sub { margin-top: 0; }
+.card-sub.unknown { font-style: italic; opacity: 0.8; }
+table.grid td .meta.unknown { font-style: italic; opacity: 0.8; }
+.controls.compact { margin-top: 0; flex-wrap: nowrap; gap: 6px; align-items: center; }
+.controls.compact label > span {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.controls.compact select { min-width: 0; width: auto; height: 32px; font-size: 0.8125rem; }
+.controls.compact button { height: 32px; padding: 0 10px; font-size: 0.8125rem; }

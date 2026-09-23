@@ -14,17 +14,18 @@ const OPTIONS: { value: string; label: string; stage: LeadStage; reason?: Closed
   { value: 'Watch', label: 'Watch', stage: 'Watch' },
 ];
 
-export default function LeadControls({ id, stage, closedReason, owner, owners }: {
-  id: string; stage: LeadStage; closedReason?: string | null; owner: string | null; owners: string[];
+/** compact: one row without visible labels, for table cells. */
+export default function LeadControls({ id, stage, closedReason, owner, owners, compact }: {
+  id: string; stage: LeadStage; closedReason?: string | null; owner: string | null; owners: string[]; compact?: boolean;
 }) {
   const [pending, start] = useTransition();
   const ownerList = owner && !owners.includes(owner) ? [...owners, owner] : owners;
   const current = stage === 'Closed' ? `Closed:${closedReason ?? 'won'}` : stage;
   return (
-    <div className="controls" aria-busy={pending}>
+    <div className={`controls${compact ? ' compact' : ''}`} aria-busy={pending}>
       <label>
-        Our stage
-        <select defaultValue={current} disabled={pending}
+        <span>Our stage</span>
+        <select aria-label="Our stage" defaultValue={current} disabled={pending}
           onChange={(e) => {
             const o = OPTIONS.find((x) => x.value === e.target.value);
             if (o) start(() => setStage(id, o.stage, o.reason));
@@ -33,15 +34,15 @@ export default function LeadControls({ id, stage, closedReason, owner, owners }:
         </select>
       </label>
       <label>
-        Owner
-        <select defaultValue={owner ?? ''} disabled={pending}
+        <span>Owner</span>
+        <select aria-label="Owner" defaultValue={owner ?? ''} disabled={pending}
           onChange={(e) => { const v = e.target.value; start(() => setOwner(id, v)); }}>
           <option value="">Unassigned</option>
           {ownerList.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       </label>
-      <button type="button" disabled={pending} onClick={() => start(() => snooze(id, 14))}>
-        Snooze 2 weeks
+      <button type="button" disabled={pending} onClick={() => start(() => snooze(id, 14))} title="Hide for 2 weeks">
+        {compact ? 'Snooze' : 'Snooze 2 weeks'}
       </button>
       {pending && <span className="saving">Saving...</span>}
     </div>
