@@ -3,6 +3,11 @@
 -- functions over RPC, so diffing and scoring are deterministic and live in
 -- one place.
 
+-- Indexes the scoring subqueries rely on.
+create index if not exists projects_fips_stage_idx on bd.projects (fips, stage);
+create index if not exists signals_type_idx on bd.signals (signal_type);
+create index if not exists signals_source_idx on bd.signals (source);
+
 -- ---------------------------------------------------------------------------
 -- Matching
 -- ---------------------------------------------------------------------------
@@ -256,8 +261,7 @@ begin
            coalesce(c.stage, 'contested'), coalesce(c.stage_at::timestamptz, '2000-01-01'::timestamptz),
            c.status, 'sabin:' || c.key,
            p_as_of::timestamptz, c.raw, 'feed:sabin'
-    from _sabin_c c
-    where c.key is not null
+    from (select distinct on (key) * from _sabin_c where key is not null order by key) c
     on conflict (external_key) do update set
       stage = case when bd.projects.status_source is distinct from excluded.status_source
                    then excluded.stage else bd.projects.stage end,
@@ -507,7 +511,10 @@ begin
     stage_changed_at = case when l.stage = 'Signal' and (s.b->>'total')::int >= v_threshold
                             then now() else l.stage_changed_at end
   from s
-  where s.id = l.id;
+  where s.id = l.id
+    -- skip unchanged leads so the nightly run stays fast
+    and (l.score_breakdown is distinct from s.b
+         or (l.stage = 'Signal' and (s.b->>'total')::int >= v_threshold));
   get diagnostics n = row_count;
   return n;
 end $$;
@@ -521,7 +528,7 @@ begin
   v_created := bd.ensure_project_leads();
   v_scored := bd.rescore_leads();
   select count(*) into v_qualified from bd.leads where qualified_at = now();
-  return jsonb_build_object('leads_created', v_created, 'leads_scored', v_scored,
+  return jsonb_build_object('leads_created', v_created, 'leads_changed', v_scored,
                             'newly_qualified', v_qualified);
 end $$;
 
@@ -557,9 +564,14 @@ left join lateral (
          count(*) as signal_count,
          (array_agg(s.headline order by s.observed_at desc))[1] as latest_headline,
          (array_agg(s.url order by s.observed_at desc))[1] as latest_url
-  from bd.signals s
-  where not s.is_noise
-    and ((l.project_id is not null and s.project_id = l.project_id) or s.lead_id = l.id)
+  -- two index lookups instead of an OR, which would scan signals once per lead
+  from (
+    select s1.observed_at, s1.headline, s1.url from bd.signals s1
+     where s1.project_id = l.project_id and not s1.is_noise
+    union all
+    select s2.observed_at, s2.headline, s2.url from bd.signals s2
+     where s2.lead_id = l.id and s2.project_id is distinct from l.project_id and not s2.is_noise
+  ) s
 ) sig on true
 where not coalesce(p.is_noise, false);
 
