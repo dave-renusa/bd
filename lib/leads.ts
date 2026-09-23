@@ -116,11 +116,24 @@ export const techLabel = (t: string | null) =>
 
 export const stageLabel = projectStageLabel;
 
-/** "Mar 2022" from the score's last_activity date, or null. */
-export const lastActivity = (b: Breakdown | null | undefined) =>
-  b?.last_activity
-    ? new Date(`${b.last_activity}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' })
-    : null;
+/**
+ * "Mar 2022" from the score's last_activity date, or just "2022" when the
+ * source gave only a year (Sabin does; it is stored as January 1).
+ */
+export const lastActivity = (b: Breakdown | null | undefined) => {
+  const d = b?.last_activity;
+  if (!d) return null;
+  if (d.endsWith('-01-01')) return d.slice(0, 4);
+  return new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+};
+
+/** How to label a lead's date: queue projects by when they entered the queue. */
+export const activityLabel = (l: Pick<LeadRow, 'project_stage' | 'score_breakdown'>) => {
+  const when = lastActivity(l.score_breakdown);
+  if (!when) return null;
+  if (l.project_stage === 'queue') return `In queue since ${when.slice(-4)}`;
+  return `${l.score_breakdown?.stale ? 'Stale: last activity' : 'Last activity'} ${when}`;
+};
 
 /** A signal URL safe to link to, or null. Feeds sometimes store citation text. */
 export const linkable = (u: string | null) => (u && /^https?:\/\/\S+$/i.test(u) ? u : null);

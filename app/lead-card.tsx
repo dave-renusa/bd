@@ -1,5 +1,5 @@
 import LeadControls from './lead-controls';
-import { lastActivity, linkable, stageLabel, techLabel, type LeadRow } from '@/lib/leads';
+import { activityLabel, linkable, stageLabel, techLabel, type LeadRow } from '@/lib/leads';
 
 const FACTORS: { key: 'fit' | 'stage' | 'pain' | 'access' | 'competition'; label: string; max: number }[] = [
   { key: 'fit', label: 'Fit', max: 20 },
@@ -38,8 +38,8 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
           : <p className="card-sub unknown">Developer not identified yet</p>)}
         <div className="chips">
           {chips.map((c) => <span key={c} className="chip">{c}</span>)}
-          {lastActivity(b) && (
-            <span className={`chip${b.stale ? ' stale' : ''}`}>{b.stale ? 'Stale: last activity' : 'Last activity'} {lastActivity(b)}</span>
+          {activityLabel(lead) && (
+            <span className={`chip${b.stale ? ' stale' : ''}`}>{activityLabel(lead)}</span>
           )}
           {lead.risk_tier != null && lead.risk_tier >= 3 && (
             <span className="chip risk">County risk {lead.risk_tier}/5</span>
