@@ -25,7 +25,6 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
     size(lead),
     lead.project_stage ? `Permitting: ${stageLabel(lead.project_stage)}` : null,
     lead.iso && lead.queue_id ? `${lead.iso} ${lead.queue_id}` : null,
-    lead.developer_name ? `Developer: ${lead.developer_name}${lead.developer_parent ? ` (${lead.developer_parent})` : ''}` : null,
   ].filter(Boolean) as string[];
 
   return (
@@ -34,6 +33,9 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
       <div>
         <h3 className="card-title">{lead.display_name}</h3>
         {where && <p className="card-sub">{where}</p>}
+        {lead.kind === 'project' && (lead.developer_name
+          ? <p className="card-sub">Developer: {lead.developer_name}{lead.developer_parent ? ` (${lead.developer_parent})` : ''}</p>
+          : <p className="card-sub unknown">Developer not identified yet</p>)}
         <div className="chips">
           {chips.map((c) => <span key={c} className="chip">{c}</span>)}
           {lastActivity(b) && (
