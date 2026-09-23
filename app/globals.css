@@ -136,3 +136,27 @@ table.grid tr:last-child td { border-bottom: 0; }
   .bars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   h1 { font-size: 32px; }
 }
+
+/* Stage guide and search ------------------------------------------------- */
+details.guide {
+  margin-top: 14px; background: var(--white); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px 16px; font-size: 14px;
+}
+details.guide summary { cursor: pointer; color: var(--navy); font-weight: 600; }
+.guide-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 10px; }
+.guide h3 { font: 20px var(--head); letter-spacing: 1px; color: var(--navy); margin: 0 0 2px; font-weight: 400; }
+.guide dl { margin: 8px 0 0; }
+.guide dl div { display: grid; grid-template-columns: 150px 1fr; gap: 10px; padding: 4px 0; border-top: 1px solid var(--line); }
+.guide dt { font-weight: 600; }
+.guide dd { margin: 0; color: var(--muted); }
+.header-search { display: flex; gap: 6px; padding-bottom: 10px; }
+.header-search input[type='search'] {
+  font: 14px var(--body); padding: 6px 10px; border-radius: 4px; border: 1px solid var(--navy-2);
+  background: var(--white); color: var(--ink); width: 220px;
+}
+.filters input[name='q'] { min-width: 240px; }
+@media (max-width: 720px) {
+  .guide-cols { grid-template-columns: 1fr; }
+  .guide dl div { grid-template-columns: 1fr; gap: 0; }
+  .header-search input[type='search'] { width: 100%; }
+}

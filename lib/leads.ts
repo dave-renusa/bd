@@ -2,6 +2,7 @@ import { db, settingNumber } from './db';
 
 import type { LeadStage } from './stages';
 export { LEAD_STAGES, type LeadStage } from './stages';
+import { projectStageLabel } from './stages';
 
 export interface Reason { factor: string; key: string; points: number; label: string; detail?: string | null }
 export interface Breakdown {
@@ -81,18 +82,25 @@ export async function newThisWeek(minScore: number): Promise<LeadRow[]> {
   return (data ?? []) as unknown as LeadRow[];
 }
 
-export interface PipelineFilters { stage?: string; owner?: string; tech?: string; state?: string; min?: number }
+export interface PipelineFilters {
+  q?: string; stage?: string; owner?: string; tech?: string; state?: string; kind?: string; min?: number;
+}
 
+export const SEARCH_LIMIT = 500;
+
+/** Filters and keyword search, via bd.search_leads. Keywords also match signal text. */
 export async function pipeline(f: PipelineFilters): Promise<LeadRow[]> {
-  let q = db().from('lead_view').select(LEAD_COLUMNS);
-  if (f.stage) q = q.eq('stage', f.stage);
-  if (f.owner === '_none') q = q.is('owner', null);
-  else if (f.owner) q = q.eq('owner', f.owner);
-  if (f.tech) q = q.eq('subject_technology', f.tech);
-  if (f.state) q = q.eq('subject_state', f.state);
-  if (f.min != null) q = q.gte('score', f.min);
-  const { data, error } = await q.order('score', { ascending: false }).limit(500);
-  if (error) throw new Error(error.message);
+  const { data, error } = await db().rpc('search_leads', {
+    p_q: f.q?.trim() || null,
+    p_state: f.state || null,
+    p_tech: f.tech || null,
+    p_kind: f.kind || null,
+    p_stage: f.stage || null,
+    p_owner: f.owner || null,
+    p_min: f.min ?? 0,
+    p_limit: SEARCH_LIMIT,
+  }).select(LEAD_COLUMNS);
+  if (error) throw new Error(`search_leads: ${error.message}`);
   return (data ?? []) as unknown as LeadRow[];
 }
 
@@ -100,4 +108,4 @@ export const techLabel = (t: string | null) =>
   ({ solar: 'Solar', wind: 'Wind', bess: 'BESS', solar_bess: 'Solar + BESS', data_center: 'Data center',
      transmission: 'Transmission', other: 'Other' } as Record<string, string>)[t ?? ''] ?? 'Unknown';
 
-export const stageLabel = (s: string | null) => (s ?? '').replace(/_/g, ' ');
+export const stageLabel = projectStageLabel;

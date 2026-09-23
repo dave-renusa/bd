@@ -3,7 +3,7 @@ import { stageLabel, techLabel, type LeadRow } from '@/lib/leads';
 
 const FACTORS: { key: 'fit' | 'stage' | 'pain' | 'access' | 'competition'; label: string; max: number }[] = [
   { key: 'fit', label: 'Fit', max: 20 },
-  { key: 'stage', label: 'Stage', max: 20 },
+  { key: 'stage', label: 'Timing', max: 20 },
   { key: 'pain', label: 'Pain', max: 25 },
   { key: 'access', label: 'Access', max: 25 },
   { key: 'competition', label: 'Competition', max: 10 },
@@ -24,7 +24,7 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
     techLabel(lead.subject_technology),
     size(lead),
     where || null,
-    lead.project_stage ? `Stage: ${stageLabel(lead.project_stage)}` : null,
+    lead.project_stage ? `Permitting: ${stageLabel(lead.project_stage)}` : null,
     lead.iso && lead.queue_id ? `${lead.iso} ${lead.queue_id}` : null,
     lead.developer_name ? `Developer: ${lead.developer_name}${lead.developer_parent ? ` (${lead.developer_parent})` : ''}` : null,
   ].filter(Boolean) as string[];
