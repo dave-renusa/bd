@@ -76,6 +76,12 @@ export function sabinRuleTypes(content: string | null): string | null {
   return out.length ? out.join('; ') : null;
 }
 
+/** The first web address in a citation block, without trailing punctuation. */
+export function firstUrl(v: unknown): string | null {
+  const m = toText(v)?.match(/https?:\/\/[^\s;,<>"']+/i);
+  return m ? m[0].replace(/[.)\]]+$/, '') : null;
+}
+
 /** Multi-county rows list counties as "A County|B County"; the first one locates the lead. */
 function firstCounty(v: unknown): string | null {
   return toText(v)?.split('|')[0].trim() || null;
@@ -125,7 +131,7 @@ export function normalizeRestrictions(rows: Row[]): SabinRestriction[] {
       // Rule labels are authoritative when present; free text can mention a lifted moratorium.
       is_moratorium: /moratori/i.test(type ?? summary ?? ''),
       moratorium_until: toIsoDate(col(row, H.until)),
-      url: toText(col(row, H.url)),
+      url: firstUrl(col(row, H.url)),
       raw: rawRow(row),
     });
   }
@@ -154,7 +160,7 @@ export function normalizeContested(rows: Row[]): SabinContested[] {
       stage: sabinStage(status),
       stage_at: toIsoDate(col(row, H.decisionDate)),
       summary: toText(col(row, H.summary)),
-      url: toText(col(row, H.url)),
+      url: firstUrl(col(row, H.url)),
       raw: rawRow(row),
     });
   }

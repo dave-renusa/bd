@@ -1,4 +1,4 @@
-import { LEAD_STAGES, SEARCH_LIMIT, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
+import { LEAD_STAGES, SEARCH_LIMIT, linkable, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
 import { STATE_CODES } from '@/lib/states';
 import LeadControls from '../lead-controls';
 import StageGuide from '../stage-guide';
@@ -91,8 +91,8 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
             {rows.map((l) => (
               <tr key={l.id}>
                 <td className="num"><span className={`score-pill${l.score >= 70 ? ' high' : l.score >= 50 ? ' mid' : ''}`}>{l.score}</span></td>
-                <td>{l.latest_url
-                  ? <a href={l.latest_url} target="_blank" rel="noreferrer">{l.display_name}</a>
+                <td>{linkable(l.latest_url)
+                  ? <a href={linkable(l.latest_url)!} target="_blank" rel="noreferrer">{l.display_name}</a>
                   : l.display_name}
                   {l.developer_name && <div className="meta">{l.developer_name}</div>}
                   {l.latest_headline && <div className="meta">{l.latest_headline}</div>}</td>
