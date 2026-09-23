@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import LeadCard from './lead-card';
+import StageGuide from './stage-guide';
 import { crossedSinceYesterday, newThisWeek, owners, thresholds } from '@/lib/leads';
 
 export const dynamic = 'force-dynamic';
@@ -23,6 +24,7 @@ export default async function Today({ searchParams }: { searchParams: Promise<{ 
     <>
       <h1>Today</h1>
       <p className="meta">{dateLabel}</p>
+      <StageGuide />
 
       <section className="section">
         <div className="section-head">

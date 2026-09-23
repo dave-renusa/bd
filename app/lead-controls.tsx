@@ -12,7 +12,7 @@ export default function LeadControls({ id, stage, owner, owners }: {
   return (
     <div className="controls" aria-busy={pending}>
       <label>
-        Stage
+        Our stage
         <select defaultValue={stage} disabled={pending}
           onChange={(e) => { const v = e.target.value as LeadStage; start(() => setStage(id, v)); }}>
           {LEAD_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
