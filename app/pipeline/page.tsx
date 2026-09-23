@@ -1,4 +1,4 @@
-import { LEAD_STAGES, SEARCH_LIMIT, lastActivity, linkable, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
+import { LEAD_STAGES, SEARCH_LIMIT, activityLabel, lastActivity, linkable, pipeline, owners, stageLabel, techLabel } from '@/lib/leads';
 import { STATE_CODES } from '@/lib/states';
 import LeadControls from '../lead-controls';
 import LeadMap, { type MapPoint } from './lead-map';
@@ -53,7 +53,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
         developer: l.kind === 'project'
           ? (l.developer_name ? `Developer: ${l.developer_name}${l.developer_parent ? ` (${l.developer_parent})` : ''}` : 'Developer not identified yet')
           : null,
-        permitting: stageLabel(l.project_stage), lastActivity: lastActivity(l.score_breakdown),
+        permitting: stageLabel(l.project_stage), activity: activityLabel(l),
         stale: !!l.score_breakdown?.stale, url: linkable(l.latest_url),
       });
     }
@@ -150,7 +150,7 @@ export default async function Pipeline({ searchParams }: { searchParams: Promise
                     : <div className="meta unknown">Developer not identified yet</div>)}</td>
                 <td>{techLabel(l.subject_technology)}{l.mw_ac ? <div className="meta">{Number(l.mw_ac).toLocaleString()} MW</div> : null}</td>
                 <td>{stageLabel(l.project_stage)}</td>
-                <td className="meta">{lastActivity(l.score_breakdown)}{l.score_breakdown?.stale && <div><span className="status status-none">Stale</span></div>}</td>
+                <td className="meta">{l.project_stage === 'queue' ? `Queued ${lastActivity(l.score_breakdown)?.slice(-4) ?? ''}` : lastActivity(l.score_breakdown)}{l.score_breakdown?.stale && <div><span className="status status-none">Stale</span></div>}</td>
                 <td><LeadControls compact id={l.id} stage={l.stage} closedReason={l.closed_reason} owner={l.owner} owners={ownerList} /></td>
               </tr>
             ))}
