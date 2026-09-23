@@ -23,7 +23,6 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
   const chips = [
     techLabel(lead.subject_technology),
     size(lead),
-    where || null,
     lead.project_stage ? `Permitting: ${stageLabel(lead.project_stage)}` : null,
     lead.iso && lead.queue_id ? `${lead.iso} ${lead.queue_id}` : null,
     lead.developer_name ? `Developer: ${lead.developer_name}${lead.developer_parent ? ` (${lead.developer_parent})` : ''}` : null,
@@ -34,6 +33,7 @@ export default function LeadCard({ lead, owners, qualify }: { lead: LeadRow; own
       <div className={`score${tone}`}><b>{lead.score}</b><span>score</span></div>
       <div>
         <h3 className="card-title">{lead.display_name}</h3>
+        {where && <p className="card-sub">{where}</p>}
         <div className="chips">
           {chips.map((c) => <span key={c} className="chip">{c}</span>)}
           {lastActivity(b) && (

@@ -260,3 +260,32 @@ details.guide summary { color: var(--navy); font-weight: 600; }
   .card, .empty, .filters, .table-wrap, details.guide { box-shadow: 0 0 0 1px #8C8574; }
 }
 .chip.stale { background: #F3EFE6; color: var(--muted); font-style: italic; }
+
+/* List / Map switch and map */
+.view-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 12px; }
+.segmented { display: inline-flex; background: var(--cream-2); border-radius: 10px; padding: 3px; }
+.segmented a {
+  font: 600 0.8125rem var(--body); color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: 8px;
+  transition: background-color 150ms var(--ease), color 150ms var(--ease);
+}
+.segmented a.on { background: var(--white); color: var(--navy); box-shadow: 0 1px 2px rgba(10, 34, 64, 0.12); }
+.lead-map {
+  height: 640px; border-radius: var(--radius); box-shadow: var(--shadow-1); overflow: hidden; background: var(--cream-2);
+  isolation: isolate; /* keeps Leaflet panes under the sticky header */
+}
+.lead-map .leaflet-tile-pane { filter: grayscale(1) contrast(0.92) brightness(1.04); }
+.lead-map .leaflet-popup-content-wrapper { border-radius: 12px; box-shadow: var(--shadow-2); }
+.lead-map .leaflet-popup-content { margin: 12px 14px; font: 0.875rem/1.4 var(--body); color: var(--ink); }
+.map-pop { display: flex; gap: 10px; align-items: flex-start; min-width: 200px; }
+.map-pop-score {
+  font: 22px/1 var(--head); color: var(--white); background: var(--navy); border-radius: 10px;
+  min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+}
+.map-pop-sub { color: var(--muted); font-size: 0.8125rem; }
+.map-pop-meta { color: var(--muted); font-size: 0.75rem; margin-top: 2px; }
+.map-legend { margin-top: 10px; }
+.map-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 4px 0 8px; vertical-align: -1px; }
+.map-legend .dot:first-child { margin-left: 0; }
+.dot.high { background: #0A2240; } .dot.mid { background: #2C4A73; } .dot.low { background: #9AA3B2; }
+.card-sub { margin: 2px 0 0; color: var(--muted); font-size: 0.875rem; }
+@media (max-width: 760px) { .lead-map { height: 70vh; } }
