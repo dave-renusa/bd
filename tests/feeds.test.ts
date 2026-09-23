@@ -27,7 +27,7 @@ describe('PJM queue', () => {
     const buf = await xlsx([
       ['PJM New Services Queue export'],
       ['Project ID', 'Name', 'Commercial Name', 'State', 'County', 'Status', 'Submitted Date', 'Fuel', 'MW Capacity', 'MW Energy', 'MFO'],
-      ['AG1-001', 'Doe 138kV', 'Sunny Acres', 'VA', 'Loudoun', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Solar', 80, 120, 120],
+      ['AG1-001 - moved to TC2', 'Doe 138kV', 'Sunny Acres', 'VA', 'Loudoun', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Solar', 80, 120, 120],
       ['AG1-002', 'Small 34.5kV', null, 'VA', 'Clarke', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Solar', 10, 20, 20],
       ['AG1-003', 'Gas Plant', null, 'PA', 'York', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Natural Gas', 900, 900, 900],
       ['AG1-004', 'Far Away', null, 'IL', 'Cook', 'Active', new Date(Date.UTC(2026, 2, 1)), 'Wind', 200, 200, 200],

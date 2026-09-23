@@ -87,7 +87,8 @@ export function normalizePjm(rows: Row[], opts: NormalizeOptions): QueueRow[] {
   const col = columnPicker(rows[0]);
   const out: QueueRow[] = [];
   for (const row of rows) {
-    const queueId = toText(col(row, ['Project ID', 'Queue Number', 'Queue ID', 'Queue Position']));
+    // PJM appends transition notes ("AH1-716 - moved to TC2"); keep only the ID so notes can change freely.
+    const queueId = toText(col(row, ['Project ID', 'Queue Number', 'Queue ID', 'Queue Position']))?.split(' - ')[0].trim();
     if (!queueId) continue;
     const technology = pjmTechnology(toText(col(row, ['Fuel', 'Fuel Type', 'Generation Type'])));
     if (technology === 'other') continue;
