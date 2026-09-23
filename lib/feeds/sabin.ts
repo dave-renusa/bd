@@ -19,17 +19,19 @@ const H = {
   state: ['State'],
   county: ['County', 'County Name', 'Counties'],
   locality: ['Locality', 'Municipality', 'Jurisdiction', 'Town', 'Township', 'City', 'Local Government', 'Locality Name'],
-  restrictionType: ['Type of Restriction', 'Restriction Type', 'Type', 'Category', 'Restriction'],
-  summary: ['Description', 'Summary', 'Details', 'Restriction Description', 'Notes', 'Project Description'],
-  technology: ['Technology', 'Energy Type', 'Project Type', 'Resource', 'Facility Type', 'Energy Source'],
-  effective: ['Effective Date', 'Date Enacted', 'Enacted', 'Date', 'Year'],
+  // The live files use a bare "Type" column for the technology, so it is not a restriction-type alias.
+  restrictionType: ['Type of Restriction', 'Restriction Type', 'Category', 'Restriction'],
+  summary: ['Description', 'Summary', 'Details', 'Restriction Description', 'Content', 'Notes', 'Project Description'],
+  technology: ['Technology', 'Energy Type', 'Project Type', 'Resource', 'Facility Type', 'Energy Source', 'Type'],
+  effective: ['Effective Date', 'Date Enacted', 'Enacted', 'Year Adopted', 'Date', 'Year'],
   until: ['Expiration', 'Expires', 'End Date', 'Moratorium End'],
   url: ['Source', 'Link', 'URL', 'Citation', 'Sources'],
-  projectName: ['Project Name', 'Project', 'Name'],
+  projectName: ['Project Name', 'Project', 'Name', 'Title'],
+  id: ['Post iD', 'Post ID', 'ID'],
   developer: ['Developer', 'Company', 'Applicant'],
   mw: ['Capacity (MW)', 'Capacity', 'MW', 'Size (MW)', 'Nameplate Capacity'],
   status: ['Status', 'Outcome', 'Current Status', 'Project Status'],
-  decisionDate: ['Decision Date', 'Date of Decision', 'Outcome Date'],
+  decisionDate: ['Decision Date', 'Date of Decision', 'Outcome Date', 'Date of Last Event'],
 };
 
 const hash = (...parts: (string | null | undefined)[]) =>
@@ -61,6 +63,29 @@ export function sabinStage(status: string | null): string {
   return 'contested';
 }
 
+/**
+ * Rule labels from the Content field ("Rule 1: Ban / Moratorium (solar) | Rule 2: Size Cap (solar)"),
+ * joined as "Ban / Moratorium; Size Cap". Null when the text has no rule labels.
+ */
+export function sabinRuleTypes(content: string | null): string | null {
+  const out: string[] = [];
+  for (const m of (content ?? '').matchAll(/Rule\s*\d+[a-z]?\s*:\s*([^(|\n]+?)\s*(?:\(|\||\n|$)/gi)) {
+    const label = m[1].trim();
+    if (label && !out.includes(label)) out.push(label);
+  }
+  return out.length ? out.join('; ') : null;
+}
+
+/** Multi-county rows list counties as "A County|B County"; the first one locates the lead. */
+function firstCounty(v: unknown): string | null {
+  return toText(v)?.split('|')[0].trim() || null;
+}
+
+/** "Bull Hill Wind Project (Hancock County)" becomes "Bull Hill Wind Project". */
+function stripPlace(title: string | null): string | null {
+  return title?.replace(/\s*\([^)]*\b(County|Counties|Parish|Parishes|Borough)\b[^)]*\)\s*$/i, '').trim() || null;
+}
+
 export interface SabinRestriction {
   key: string; state: string; county: string | null; locality: string | null;
   restriction_type: string | null; summary: string | null; technologies: string[] | null;
@@ -81,19 +106,24 @@ export function normalizeRestrictions(rows: Row[]): SabinRestriction[] {
   for (const row of rows) {
     const state = toStateCode(col(row, H.state));
     if (!state) continue;
-    const county = toText(col(row, H.county));
+    // Expired rules no longer restrict anything.
+    if (/expired|repealed|rescinded|lifted/i.test(toText(col(row, H.status)) ?? '')) continue;
+    const county = firstCounty(col(row, H.county));
     const locality = toText(col(row, H.locality));
-    const type = toText(col(row, H.restrictionType));
     const summary = toText(col(row, H.summary));
+    const rules = sabinRuleTypes(summary);
+    const type = toText(col(row, H.restrictionType)) ?? rules;
     const techs = sabinTechnologies(toText(col(row, H.technology)));
+    const id = toText(col(row, H.id));
     out.push({
-      key: hash(state, county, locality, type, summary?.slice(0, 120)),
+      key: id ? hash('id', id) : hash(state, county, locality, type, summary?.slice(0, 120)),
       state, county, locality,
       restriction_type: type,
       summary,
       technologies: techs.length ? techs : null,
       effective: toIsoDate(col(row, H.effective)),
-      is_moratorium: /moratori/i.test(`${type ?? ''} ${summary ?? ''}`),
+      // Rule labels are authoritative when present; free text can mention a lifted moratorium.
+      is_moratorium: /moratori/i.test(type ?? summary ?? ''),
       moratorium_until: toIsoDate(col(row, H.until)),
       url: toText(col(row, H.url)),
       raw: rawRow(row),
@@ -108,12 +138,13 @@ export function normalizeContested(rows: Row[]): SabinContested[] {
   for (const row of rows) {
     const state = toStateCode(col(row, H.state));
     if (!state) continue;
-    const county = toText(col(row, H.county));
+    const county = firstCounty(col(row, H.county));
     const locality = toText(col(row, H.locality));
-    const name = toText(col(row, H.projectName));
+    const name = stripPlace(toText(col(row, H.projectName)));
     const status = toText(col(row, H.status));
+    const id = toText(col(row, H.id));
     out.push({
-      key: hash(state, county, locality, name),
+      key: id ? hash('id', id) : hash(state, county, locality, name),
       state, county, locality,
       project_name: name,
       developer: toText(col(row, H.developer)),
@@ -154,8 +185,8 @@ export function findSabinLinks(html: string, base = SABIN_PAGE): { url: string; 
 /** Which Sabin file a parsed sheet is, judged by its column headers. */
 export function classifySabinSheet(rows: Row[]): 'restrictions' | 'contested' | null {
   const headers = Object.keys(rows[0] ?? {}).map((h) => h.toLowerCase()).join(' | ');
-  if (/restriction/.test(headers)) return 'restrictions';
-  if (/project|capacity|developer/.test(headers)) return 'contested';
+  if (/restriction|year adopted/.test(headers)) return 'restrictions';
+  if (/project|capacity|developer|year cancelled|litigation/.test(headers)) return 'contested';
   return null;
 }
 
